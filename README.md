@@ -1,7 +1,7 @@
 
-# Edemy
+# SkillBridge
 
-Edemy is a full-stack online learning platform with course management, video streaming, and payment processing. Built using the MERN stack with modern UI components and real-time features.
+SkillBridge is a full-stack online learning platform with course management, video streaming, and payment processing. Built using the MERN stack with modern UI components and real-time features.
 
 ## Features
 
@@ -32,8 +32,8 @@ Vite (for React frontend)
 
 **Clone the Repository**
 ```bash
-  git clone https://github.com/<your-username>/edemy.git
-  cd edemy
+  git clone https://github.com/<your-username>/SkillBridge.git
+  cd SkillBridge
 ```
 
 **Setup**
