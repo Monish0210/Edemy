@@ -6,22 +6,38 @@ import { toast } from 'react-toastify'
 
 const MyCourses = () => {
 
-  const {currency, backendUrl, isEducator, getToken} = useContext(AppContext)
+  const { currency, backendUrl, isEducator, getToken } = useContext(AppContext)
   const [courses, setCourses] = useState(null)
 
   const fetchEducatorCourses = async () => {
     try {
       const token = await getToken()
-      const {data} = await axios.get(backendUrl + '/api/educator/courses', {headers: {Authorization: `Bearer ${token}`}})
-      
+      const { data } = await axios.get(backendUrl + '/api/educator/courses', { headers: { Authorization: `Bearer ${token}` } })
+
       data.success && setCourses(data.courses)
     } catch (error) {
       toast.error(error.message)
     }
   }
 
+  const deleteCourse = async (courseId) => {
+    if (!window.confirm('Are you sure you want to delete this course?')) return;
+    try {
+      const token = await getToken()
+      const { data } = await axios.post(backendUrl + '/api/educator/delete-course', { courseId }, { headers: { Authorization: `Bearer ${token}` } })
+      if (data.success) {
+        toast.success(data.message)
+        fetchEducatorCourses()
+      } else {
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
+
   useEffect(() => {
-    if(isEducator){
+    if (isEducator) {
       fetchEducatorCourses()
     }
   }, [isEducator])
@@ -48,10 +64,13 @@ const MyCourses = () => {
                     <img src={course.courseThumbnail} alt="Course Image" className='w-16' />
                     <span className='truncate hidden md:block'>{course.courseTitle}</span>
                   </td>
-                  <td className='px-4 py-3'>{currency} {Math.floor(course.enrolledStudents.length * (course.coursePrice - course.discount * course.coursePrice / 100))}</td>
+                  <td className='px-4 py-3'>{currency} {Math.floor(course.enrolledStudents.length * ((course.coursePrice - course.discount * course.coursePrice / 100) * 0.98))}</td>
                   <td className='px-4 py-3'>{course.enrolledStudents.length}</td>
                   <td className='px-4 py-3'>
                     {new Date(course.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className='px-4 py-3 text-center cursor-pointer'>
+                    <button onClick={() => deleteCourse(course._id)} className='text-red-600 hover:text-red-800'>Delete</button>
                   </td>
                 </tr>
               ))}

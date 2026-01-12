@@ -3,6 +3,7 @@ import { Purchase } from "../models/Purchase.js";
 import Stripe from "stripe";
 import Course from "../models/Course.js";
 import { CourseProgress } from "../models/CourseProgress.js";
+import Feedback from "../models/Feedback.js";
 
 
 //Get User Data
@@ -11,7 +12,7 @@ export const getUserData = async (req, res) => {
         const userId = req.auth.userId
         const user = await User.findById(userId)
 
-        if(!user) {
+        if (!user) {
             return res.json({ success: false, message: 'User Not Found' })
         }
 
@@ -19,6 +20,40 @@ export const getUserData = async (req, res) => {
 
     } catch (error) {
         res.json({ success: false, message: error.message })
+    }
+}
+
+// Sync User (Fallback for Webhooks)
+export const syncUser = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const user = await User.findById(userId);
+
+        if (user) {
+            return res.json({ success: true, message: 'User already exists' });
+        }
+
+        // If user doesn't exist, create them using Clerk data (passed from simple body or fetched - for simplicity here we assume standard minimal data)
+        // In a real 'sync', we might fetch from Clerk API. 
+        // Here we can rely on what the frontend passes OR just create a placeholder until next webhook.
+        // Actually, best practice: Let frontend pass basic details if needed, or fetch from Clerk.
+        // Given we don't have Clerk Secret Key initialized in this file for SDK usage easily without import,
+        // let's try to just create the user with ID and basic info.
+
+        const { name, email, imageUrl } = req.body;
+
+        await User.create({
+            _id: userId,
+            email,
+            name: (name && name !== 'null null' && name !== 'undefined undefined') ? name : "User",
+            imageUrl,
+            role: 'student'
+        });
+
+        res.json({ success: true, message: 'User Synced' });
+
+    } catch (error) {
+        res.json({ success: false, message: error.message });
     }
 }
 
@@ -45,14 +80,18 @@ export const purchaseCourse = async (req, res) => {
         const userData = await User.findById(userId)
         const courseData = await Course.findById(courseId)
 
-        if(!userData || !courseData) {
+        if (!userData || !courseData) {
             return res.json({ success: false, message: 'Data Not Found' })
         }
+
+        const amount = (courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2);
+        const adminEarnings = (amount * 0.02).toFixed(2); // 2% Admin Fee
 
         const purchaseData = {
             courseId: courseData._id,
             userId,
-            amount: (courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2),
+            amount,
+            adminEarnings,
         }
 
         const newPurchase = await Purchase.create(purchaseData)
@@ -91,24 +130,24 @@ export const purchaseCourse = async (req, res) => {
 }
 
 // Update User Course Progress
-export const updateUserCourseProgress = async(req, res) => {
+export const updateUserCourseProgress = async (req, res) => {
     try {
         const userId = req.auth.userId
         const { courseId, lectureId } =
-        req.body
+            req.body
 
-        const progressData = await CourseProgress.findOne({userId, courseId})
+        const progressData = await CourseProgress.findOne({ userId, courseId })
 
-        if(progressData){
-            if(progressData.lectureCompleted.includes(lectureId)){
+        if (progressData) {
+            if (progressData.lectureCompleted.includes(lectureId)) {
                 return res.json({ success: true, message: 'Lecture Already Completed' })
             }
 
             progressData.lectureCompleted.push(lectureId)
             await progressData.save()
-        } else{
+        } else {
             await CourseProgress.create({
-                userId, 
+                userId,
                 courseId,
                 lectureCompleted: [lectureId]
             })
@@ -116,20 +155,21 @@ export const updateUserCourseProgress = async(req, res) => {
 
         res.json({ success: true, message: 'Progress Updated' })
     } catch (error) {
-        res.json({ success: false, message: error.message
+        res.json({
+            success: false, message: error.message
         })
     }
 }
 
 // get User Course Progress
-export const getUserCourseProgress = async(req, res) => {
+export const getUserCourseProgress = async (req, res) => {
     try {
         const userId = req.auth.userId
         const { courseId } =
-        req.body
+            req.body
 
-        const progressData = await CourseProgress.findOne({userId, courseId})
-        
+        const progressData = await CourseProgress.findOne({ userId, courseId })
+
         res.json({ success: true, progressData })
     } catch (error) {
         res.json({ success: false, message: error.message })
@@ -137,33 +177,34 @@ export const getUserCourseProgress = async(req, res) => {
 }
 
 // Add User Ratings to Course
-export const addUserRating = async(req, res) => {
+export const addUserRating = async (req, res) => {
     const userId = req.auth.userId;
     const { courseId, rating } = req.body;
 
-    if(!courseId || !userId || !rating || rating < 1 || rating > 5) {
+    if (!courseId || !userId || !rating || rating < 1 || rating > 5) {
         return res.json({ success: false, message: 'Invalid Details' })
     }
 
     try {
         const course = await Course.findById(courseId);
 
-        if(!courseId) {
+        if (!courseId) {
             return res.json({ success: false, message: 'Course not found.' });
         }
 
         const user = await User.findById(userId);
 
-        if(!user || !user.enrolledCourses.includes(courseId)){
+        if (!user || !user.enrolledCourses.includes(courseId)) {
             return res.json({ success: false, message: 'User has not purchased this course' });
         }
 
-        const existingRatingIndex = course.courseRatings.findIndex(r => r,userId === userId)
+        const existingRatingIndex = course.courseRatings.findIndex(r => r, userId === userId)
 
-        if(existingRatingIndex > -1){
+        if (existingRatingIndex > -1) {
             course.courseRatings[existingRatingIndex].rating = rating;
-        } else{
-            course.courseRatings.push({userId, rating});
+            course.courseRatings[existingRatingIndex].feedbackText = req.body.feedbackText || "";
+        } else {
+            course.courseRatings.push({ userId, rating, feedbackText: req.body.feedbackText || "" });
         }
 
         await course.save();
@@ -172,5 +213,39 @@ export const addUserRating = async(req, res) => {
 
     } catch (error) {
         return res.json({ success: false, message: error.message })
+    }
+}
+
+// Add Platform Feedback
+export const addPlatformFeedback = async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const { rating, feedbackText } = req.body;
+
+        if (!rating || !feedbackText) {
+            return res.json({ success: false, message: "Missing Details" });
+        }
+
+        await Feedback.create({ userId, rating, feedbackText });
+
+        res.json({ success: true, message: "Feedback Submitted" });
+
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
+// Get Platform Feedbacks (Public)
+export const getPlatformFeedbacks = async (req, res) => {
+    try {
+        // Fetch latest 5 feedbacks
+        const feedbacks = await Feedback.find()
+            .sort({ createdAt: -1 })
+            .limit(4)
+            .populate('userId', 'name imageUrl');
+
+        res.json({ success: true, feedbacks });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
     }
 }

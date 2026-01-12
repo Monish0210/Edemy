@@ -25,6 +25,10 @@ const Footer = () => {
             <input className='border border-gray-500/30 bg-gray-800 text-gray-500 placeholder-gray-500 outline-none w-64 h-9 rounded px-2 text-sm' type="email" placeholder='Enter your email' />
             <button className='bg-blue-600 w-24 h-9 text-white rounded'>Subscribe</button>
           </div>
+          <div className='mt-5'>
+            <p className='text-sm text-white/80 mb-2'>Enjoying the platform?</p>
+            <button onClick={() => document.getElementById('feedback-modal').showModal()} className='text-blue-400 hover:text-blue-300 text-sm'>Give us Feedback</button>
+          </div>
         </div>
       </div>
       <p className='py-4 text-center text-xs md:text-sm text-white/60'>Copyright 2024 © Edemy. All Right Reserved.</p>

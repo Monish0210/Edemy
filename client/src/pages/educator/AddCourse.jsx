@@ -8,7 +8,7 @@ import axios from 'axios';
 
 const AddCourse = () => {
 
-  const {backendUrl, getToken} = useContext(AppContext)
+  const { backendUrl, getToken } = useContext(AppContext)
 
   const quillRef = useRef(null);
   const editorRef = useRef(null);
@@ -31,9 +31,9 @@ const AddCourse = () => {
   )
 
   const handleChapter = (action, chapterId) => {
-    if(action === 'add') {
+    if (action === 'add') {
       const title = prompt('Enter Chapter Name: ');
-      if(title) {
+      if (title) {
         const newChapter = {
           chapterId: uniqid(),
           chapterTitle: title,
@@ -41,13 +41,13 @@ const AddCourse = () => {
           collapsed: false,
           chapterOrder: chapters.length > 0 ? chapters.slice(-1)[0].chapterOrder + 1 : 1,
         };
-        setChapters([ ...chapters, newChapter]);
+        setChapters([...chapters, newChapter]);
       }
-    } else if(action === 'remove') {
+    } else if (action === 'remove') {
       setChapters(chapters.filter((chapter) => chapter.chapterId !== chapterId));
-    } else if(action === 'toggle') {
+    } else if (action === 'toggle') {
       setChapters(
-        chapters.map((chapter) => 
+        chapters.map((chapter) =>
           chapter.chapterId === chapterId ? { ...chapter, collapsed: !chapter.collapsed } : chapter
         )
       );
@@ -55,13 +55,13 @@ const AddCourse = () => {
   };
 
   const handleLecture = (action, chapterId, lectureIndex) => {
-    if(action === 'add') {
+    if (action === 'add') {
       setCurrentChapterId(chapterId);
       setShowPopup(true);
-    } else if(action === 'remove') {
+    } else if (action === 'remove') {
       setChapters(
         chapters.map((chapter) => {
-          if(chapter.chapterId === chapterId) {
+          if (chapter.chapterId === chapterId) {
             chapter.chapterContent.splice(lectureIndex, 1);
           }
           return chapter;
@@ -73,7 +73,7 @@ const AddCourse = () => {
   const addLecture = () => {
     setChapters(
       chapters.map((chapter) => {
-        if(chapter.chapterId === currentChapterId) {
+        if (chapter.chapterId === currentChapterId) {
           const newLecture = {
             ...lectureDetails,
             lectureOrder: chapter.chapterContent.length > 0 ? chapter.chapterContent.slice(-1)[0].lectureOrder + 1 : 1,
@@ -89,7 +89,6 @@ const AddCourse = () => {
       lectureTitle: '',
       lectureDuration: '',
       lectureUrl: '',
-      isPreviewFree: '',
       isPreviewFree: false,
     });
   };
@@ -97,10 +96,10 @@ const AddCourse = () => {
   const handleSubmit = async (e) => {
     try {
       e.preventDefault()
-      if(!image){
+      if (!image) {
         toast.error('Thumbnail Not Selected')
       }
-      
+
       const courseData = {
         courseTitle,
         courseDescription: quillRef.current.root.innerHTML,
@@ -115,9 +114,9 @@ const AddCourse = () => {
 
       const token = await getToken()
 
-      const {data} = await axios.post(backendUrl + '/api/educator/add-course', formData, {headers: {Authorization: `Bearer ${token}`}})
+      const { data } = await axios.post(backendUrl + '/api/educator/add-course', formData, { headers: { Authorization: `Bearer ${token}` } })
 
-      if(data.success){
+      if (data.success) {
         toast.success(data.message)
         setCourseTitle('')
         setCoursePrice(0)
@@ -125,7 +124,7 @@ const AddCourse = () => {
         setImage(null)
         setChapters([])
         quillRef.current.root.innerHTML = ""
-      } else{
+      } else {
         toast.error(data.message)
       }
     } catch (error) {
@@ -135,7 +134,7 @@ const AddCourse = () => {
 
   useEffect(() => {
     //initate Quill only once
-    if(!quillRef.current && editorRef.current) {
+    if (!quillRef.current && editorRef.current) {
       quillRef.current = new Quill(editorRef.current, {
         theme: 'snow',
       });
@@ -192,7 +191,7 @@ const AddCourse = () => {
                   {chapter.chapterContent.map((lecture, lectureIndex) => (
                     <div key={lectureIndex} className='flex justify-between items-center mb-2'>
                       <span className='mr-10'>{lectureIndex + 1} {lecture.lectureTitle} - {lecture.lectureDuration} mins - <a href={lecture.lectureUrl} target='_blank' className='text-blue-500'>Link</a> - {lecture.isPreviewFree ? 'Free Preview' : 'Paid'}</span>
-                      <img src={assets.cross_icon} alt=""  onClick={() => handleLecture('remove', chapter.chapterId, lectureIndex)} className='cursor-pointer' />
+                      <img src={assets.cross_icon} alt="" onClick={() => handleLecture('remove', chapter.chapterId, lectureIndex)} className='cursor-pointer' />
                     </div>
                   ))}
                   <div className='inline-flex bg-gray-100 p-2 rounded cursor-pointer mt-2' onClick={() => handleLecture('add', chapter.chapterId)}>+ Add Lecture</div>
@@ -209,7 +208,7 @@ const AddCourse = () => {
 
                 <div className='mb-2'>
                   <p>Lecture Title</p>
-                  <input 
+                  <input
                     type="text"
                     className='mt-1 block w-full border rounded py-1 px-2'
                     value={lectureDetails.lectureTitle}
@@ -219,7 +218,7 @@ const AddCourse = () => {
 
                 <div className='mb-2'>
                   <p>Duration (minutes)</p>
-                  <input 
+                  <input
                     type="number"
                     className='mt-1 block w-full border rounded py-1 px-2'
                     value={lectureDetails.lectureDuration}
@@ -229,7 +228,7 @@ const AddCourse = () => {
 
                 <div className='mb-2'>
                   <p>Lecture URL</p>
-                  <input 
+                  <input
                     type="text"
                     className='mt-1 block w-full border rounded py-1 px-2'
                     value={lectureDetails.lectureUrl}
@@ -239,7 +238,7 @@ const AddCourse = () => {
 
                 <div className='flex gap-2 my-4'>
                   <p>Is Preview Free?</p>
-                  <input 
+                  <input
                     type="checkbox"
                     className='mt-1 scale-125'
                     checked={lectureDetails.isPreviewFree}
@@ -253,7 +252,7 @@ const AddCourse = () => {
 
               </div>
             </div>
-          ) 
+          )
           }
         </div>
 

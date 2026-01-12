@@ -1,5 +1,5 @@
 import express from 'express'
-import { addUserRating, getUserCourseProgress, getUserData, purchaseCourse, updateUserCourseProgress, userEnrolledCourses } from '../controllers/userController.js'
+import { addPlatformFeedback, addUserRating, getPlatformFeedbacks, getUserCourseProgress, getUserData, purchaseCourse, syncUser, updateUserCourseProgress, userEnrolledCourses } from '../controllers/userController.js'
 
 const userRouter = express.Router()
 
@@ -10,5 +10,8 @@ userRouter.post('/purchase', purchaseCourse)
 userRouter.post('/update-course-progress', updateUserCourseProgress)
 userRouter.post('/get-course-progress', getUserCourseProgress)
 userRouter.post('/add-rating', addUserRating)
+userRouter.post('/add-feedback', addPlatformFeedback)
+userRouter.get('/feedbacks', getPlatformFeedbacks)
+userRouter.post('/sync-user', syncUser)
 
 export default userRouter

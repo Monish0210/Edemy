@@ -12,7 +12,8 @@ const PurchaseSchema = new mongoose.Schema({
         required: true
     },
     amount: { type: Number, required: true },
+    adminEarnings: { type: Number, default: 0 },
     status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' }
-}, {timestamps: true});
+}, { timestamps: true });
 
 export const Purchase = mongoose.model('Purchase', PurchaseSchema)
